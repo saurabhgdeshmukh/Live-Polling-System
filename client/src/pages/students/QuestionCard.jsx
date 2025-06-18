@@ -10,6 +10,16 @@ const QuestionCard = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+  const [currentUser, setCurrentUser] = useState(""); // NEW
+
+  useEffect(() => {
+    let stored = sessionStorage.getItem("studentName");
+    if (!stored) {
+      stored = "User-" + Math.floor(Math.random() * 10000);
+      sessionStorage.setItem("studentName", stored);
+    }
+    setCurrentUser(stored);
+  }, []);
 
   const options = [
     { id: 1, text: "Mars" },
@@ -99,7 +109,11 @@ const QuestionCard = () => {
           </svg>
         </button>
       </div>
-      <ChatPopup isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <ChatPopup
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        currentUser={currentUser}
+      />
     </div>
   );
 };
