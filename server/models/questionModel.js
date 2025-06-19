@@ -6,12 +6,13 @@ export const createQuestion = async (question, duration, options) => {
     await client.query("BEGIN");
 
     const questionResult = await client.query(
-      "INSERT INTO questions (question, duration) VALUES ($1, $2) RETURNING id",
+      "INSERT INTO questions (question, duration) VALUES ($1, $2) RETURNING id, question, duration",
       [question, duration]
     );
 
     const questionId = questionResult.rows[0].id;
 
+    // Insert options
     for (let opt of options) {
       await client.query(
         "INSERT INTO options (question_id, text, is_correct) VALUES ($1, $2, $3)",
@@ -19,8 +20,24 @@ export const createQuestion = async (question, duration, options) => {
       );
     }
 
+    // Fetch all options after insert
+    const optionsResult = await client.query(
+      "SELECT id, text FROM options WHERE question_id = $1",
+      [questionId]
+    );
+
     await client.query("COMMIT");
-    return questionId;
+
+    // Return full question object
+    return {
+      _id: questionId, // for frontend compatibility
+      question: questionResult.rows[0].question,
+      duration: questionResult.rows[0].duration,
+      options: optionsResult.rows.map((o) => ({
+        _id: o.id, // mimic MongoDB's _id for frontend
+        text: o.text,
+      })),
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -28,6 +45,7 @@ export const createQuestion = async (question, duration, options) => {
     client.release();
   }
 };
+
 
 export const getLatestQuestion = async () => {
   const result = await pool.query(

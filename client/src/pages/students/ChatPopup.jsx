@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:4000"); // or your deployed server URL
+const socket = io("http://localhost:4000");
 
 const ChatPopup = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState("chat");
@@ -29,7 +29,7 @@ const ChatPopup = ({ isOpen, onClose, currentUser }) => {
 
     socket.emit("chat:send_message", message);
     setNewMsg("");
-    // Don't push your own message — wait for echo from backend
+  
   };
 
   useEffect(() => {
@@ -57,7 +57,6 @@ const ChatPopup = ({ isOpen, onClose, currentUser }) => {
         ))}
       </div>
 
-      {/* Chat / Participants */}
       <div className="p-4 h-full overflow-y-auto flex-1">
         {activeTab === "chat" ? (
           <div className="space-y-4">
@@ -100,7 +99,6 @@ const ChatPopup = ({ isOpen, onClose, currentUser }) => {
         )}
       </div>
 
-      {/* Input */}
       {activeTab === "chat" && (
         <div className="border-t p-3 flex items-center">
           <input

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
-
+import io from "socket.io-client";
+const socket = io("http://localhost:4000");
 function QuestionList() {
   const [question, setQuestion] = useState("");
   const [duration, setDuration] = useState(60);
@@ -8,7 +9,7 @@ function QuestionList() {
     { text: "", correct: null },
     { text: "", correct: null },
   ]);
-
+  
   const handleOptionChange = (index, value) => {
     const updated = [...options];
     updated[index].text = value;
@@ -27,28 +28,35 @@ function QuestionList() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!question.trim() || options.some((o) => !o.text.trim())) {
-      alert("Please fill the question and all option texts.");
-      return;
-    }
+  
+const handleSubmit = async () => {
+  // console.log(question)
+  if (!question.trim() || options.some((o) => !o.text.trim())) {
+    alert("Please fill the question and all option texts.");
+    return;
+  }
 
-    try {
-      const res = await axios.post("http://localhost:4000/api/questions", {
-        question,
-        duration,
-        options,
-      });
-      alert("Question submitted successfully!");
-      setQuestion("");
-      setOptions([
-        { text: "", correct: null },
-        { text: "", correct: null },
-      ]);
-    } catch (error) {
-      alert("Failed to submit question.");
-    }
-  };
+  try {
+    const res = await axios.post("http://localhost:4000/api/questions", {
+      question,
+      duration,
+      options,
+    });
+
+    // Emit question live after storing
+    socket.emit("question:active", res.data);
+
+    alert("Question submitted successfully!");
+    setQuestion("");
+    setOptions([
+      { text: "", correct: null },
+      { text: "", correct: null },
+    ]);
+  } catch (error) {
+    alert("Failed to submit question.");
+  }
+};
+
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-white px-4 py-8 font-sora">

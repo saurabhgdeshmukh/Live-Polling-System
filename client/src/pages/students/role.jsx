@@ -69,6 +69,14 @@ function Role() {
 
       <button
         disabled={!selected}
+        onClick={() => {
+          sessionStorage.setItem("role", selected);
+          if (selected === "student") {
+            window.location.href = "/info";
+          } else {
+            window.location.href = "/question-data";
+          }
+        }}
         className={`px-8 py-2 w-[233px] h-[57px] rounded-full text-white text-xl font-medium transition ${
           selected
             ? "bg-gradient-to-r from-[#8F64E1] to-[#1D68BD] hover:opacity-90"

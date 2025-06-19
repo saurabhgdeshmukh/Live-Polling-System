@@ -3,7 +3,7 @@ import ChatPopup from "./ChatPopup";
 import io from "socket.io-client";
 const socket = io("http://localhost:4000");
 
-const QuestionCard = ({ role = "student" }) => {
+const QuestionCard = () => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -11,8 +11,14 @@ const QuestionCard = ({ role = "student" }) => {
   const [questionData, setQuestionData] = useState(null);
   const [results, setResults] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
+  const [role, setRole] = useState("student"); // default fallback
+
 
   useEffect(() => {
+    const storedRole = sessionStorage.getItem("role");
+    if (storedRole) {
+      setRole(storedRole);
+    }
     let stored = sessionStorage.getItem("studentName");
     if (!stored) {
       stored = "User-" + Math.floor(Math.random() * 10000);
@@ -24,6 +30,7 @@ const QuestionCard = ({ role = "student" }) => {
   useEffect(() => {
     // Listen to new question from server
     socket.on("question:active", (data) => {
+      console.log("📨 Received question:active", data);
       setQuestionData(data);
       setSelected(null);
       setSubmitted(false);
@@ -69,13 +76,13 @@ const QuestionCard = ({ role = "student" }) => {
     return total === 0 ? 0 : Math.round((option?.count / total) * 100);
   };
 
-  if (!questionData) {
-    return (
-      <div className="text-center font-sora mt-20">
-        <p className="text-xl text-gray-600">Waiting for the teacher to ask a new question...</p>
-      </div>
-    );
-  }
+  // if (!questionData) {
+  //   return (
+  //     <div className="text-center font-sora mt-20">
+  //       <p className="text-xl text-gray-600">Waiting for the teacher to ask a new question...</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="relative font-sora flex flex-col items-start justify-center mx-auto mt-40 w-[727px]">

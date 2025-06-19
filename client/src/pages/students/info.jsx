@@ -16,7 +16,7 @@ function Info() {
   const handleContinue = () => {
     if (!name.trim()) return;
     sessionStorage.setItem("studentName", name.trim());
-    navigate("/student"); // or whatever the route is after login
+    navigate("/wait"); // or whatever the route is after login
   };
 
   return (
