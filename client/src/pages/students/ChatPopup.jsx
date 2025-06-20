@@ -3,45 +3,63 @@ import io from "socket.io-client";
 
 const socket = io("http://localhost:4000");
 
-const ChatPopup = ({ isOpen, onClose, currentUser }) => {
+const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
   const [activeTab, setActiveTab] = useState("chat");
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState("");
+  const [participants, setParticipants] = useState([]);
   const messagesEndRef = useRef(null);
 
+  // Socket listeners
   useEffect(() => {
     socket.on("chat:receive_message", (data) => {
       setMessages((prev) => [...prev, data]);
     });
 
+    socket.on("users:update", (list) => {
+      setParticipants(list); // list is [{ id, name }]
+    });
+
+    socket.on("user:kicked", ({ name }) => {
+      if (name === currentUser) {
+        alert("You have been kicked out.");
+        sessionStorage.clear();
+        window.location.href = "/";
+      }
+    });
+
     return () => {
       socket.off("chat:receive_message");
+      socket.off("users:update");
+      socket.off("user:kicked");
     };
-  }, []);
+  }, [currentUser]);
 
-  const sendMessage = () => {
-    if (newMsg.trim() === "") return;
-
-    const message = {
-      sender: currentUser,
-      message: newMsg,
-    };
-
-    socket.emit("chat:send_message", message);
-    setNewMsg("");
-  
-  };
-
+  // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Send chat message
+  const sendMessage = () => {
+    if (!newMsg.trim()) return;
+    const message = { sender: currentUser, message: newMsg };
+    socket.emit("chat:send_message", message);
+    setNewMsg("");
+  };
+
+  // Kick participant
+  const kickParticipant = (userId) => {
+  socket.emit("user:kick", { id: userId });
+};
+
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed bottom-28 right-14 w-[400px] h-[477px] bg-white shadow-lg z-50 border border-gray-300 flex flex-col">
       {/* Tabs */}
-      <div className="flex border-b w-[250px]">
+      <div className="flex border-b w-full">
         {["Chat", "Participants"].map((tab) => (
           <button
             key={tab}
@@ -72,9 +90,7 @@ const ChatPopup = ({ isOpen, onClose, currentUser }) => {
                 </div>
                 <div
                   className={`inline-block px-3 py-2 rounded-md text-white ${
-                    msg.sender === currentUser
-                      ? "bg-[#8F64E1]"
-                      : "bg-[#3A3A3B]"
+                    msg.sender === currentUser ? "bg-[#8F64E1]" : "bg-[#3A3A3B]"
                   }`}
                 >
                   {msg.message}
@@ -85,15 +101,29 @@ const ChatPopup = ({ isOpen, onClose, currentUser }) => {
           </div>
         ) : (
           <div>
-            <div className="text-left text-[#726F6F] mb-2">Name</div>
-            <ul className="text-sm text-left text-gray-800 space-y-4">
-              {["Rahul Arora", "Pushpender Rautela", "Rijul Zalpuri", "Nadeem N", "Ashwin Sharma"].map(
-                (name, index) => (
-                  <li key={index} className="font-medium">
-                    {name}
-                  </li>
-                )
-              )}
+            <div className="text-left text-[#726F6F] mb-2 grid grid-cols-2 font-semibold text-sm border-b pb-2">
+              <span>Name</span>
+              {role === "teacher" && <span className="text-right">Action</span>}
+            </div>
+
+            <ul className="text-sm text-left text-gray-800 space-y-3">
+              {participants.map((user) => (
+                <li key={user.id} className="flex justify-between items-center">
+                  <span>{user.name}</span>
+                  {role === "teacher" ? (
+                    <button
+                      onClick={() => kickParticipant(user.id)}
+                      className="text-blue-600 hover:underline text-xs"
+                    >
+                      Kick out
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">
+                      {/* Empty cell */}
+                    </span>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         )}

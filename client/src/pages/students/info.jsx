@@ -15,7 +15,7 @@ function Info() {
   const handleContinue = () => {
     if (!name.trim()) return;
     sessionStorage.setItem("studentName", name.trim());
-    navigate("/wait"); 
+    navigate("/question"); 
   };
 
   return (

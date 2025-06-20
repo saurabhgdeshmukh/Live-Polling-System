@@ -33,9 +33,14 @@ function QuestionList() {
 
   
 const handleSubmit = async () => {
-  // console.log(question)
   if (!question.trim() || options.some((o) => !o.text.trim())) {
     alert("Please fill the question and all option texts.");
+    return;
+  }
+
+  const sessionId = sessionStorage.getItem("teacherSessionId");
+  if (!sessionId) {
+    alert("Session ID is missing. Please go back and select your role again.");
     return;
   }
 
@@ -44,19 +49,25 @@ const handleSubmit = async () => {
       question,
       duration,
       options,
+      sessionId, // ✅ now correctly included
     });
-    socket.emit("question:active", res.data);
 
+    socket.emit("question:active", res.data); // still emits
+
+    // Optional cleanup (uncomment if desired)
     // setQuestion("");
     // setOptions([
     //   { text: "", correct: null },
     //   { text: "", correct: null },
     // ]);
-    navigate("/question")
+
+    navigate("/question"); // Go back to the main question page
   } catch (error) {
+    console.error("❗ Failed to submit question:", error);
     alert("Failed to submit question.");
   }
 };
+
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-white px-4 py-8 font-sora">

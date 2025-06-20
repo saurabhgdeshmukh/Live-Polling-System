@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 const socket = io("http://localhost:4000");
 
 const QuestionCard = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+
   const [timeLeft, setTimeLeft] = useState(60);
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -14,60 +15,172 @@ const QuestionCard = () => {
   const [results, setResults] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [role, setRole] = useState("student");
+  const [sessionId, setSessionId] = useState("");
+  const [participants, setParticipants] = useState([]);
+
+  // Set role and current user
   useEffect(() => {
     const storedRole = sessionStorage.getItem("role");
-    if (storedRole) {
-      setRole(storedRole);
-    }
+    if (storedRole) setRole(storedRole);
+
     let stored = sessionStorage.getItem("studentName");
     if (!stored) {
       stored = "User-" + Math.floor(Math.random() * 10000);
       sessionStorage.setItem("studentName", stored);
     }
     setCurrentUser(stored);
-  }, []);
-  const handleClick=()=>{
-              navigate("/question-data")
-            }
-  useEffect(() => {
-  const fetchLatestQuestion = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/api/questions/latest");
-      const data = await res.json();
-      console.log("📦 Fetched from /latest:", data);
 
-      if (data) {
-        setQuestionData(data);
-        setTimeLeft(data.duration || 60);
-      }
-    } catch (err) {
-      console.error("Failed to fetch latest question", err);
+    let id = sessionStorage.getItem("userId");
+    if (!id) {
+      id = Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem("userId", id);
     }
-  };
+  }, []);
 
-  fetchLatestQuestion();
+  // Set sessionId if teacher
+  useEffect(() => {
+    let id = sessionStorage.getItem("teacherSessionId");
+    if (!id) {
+      id = Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem("teacherSessionId", id);
+    }
+    setSessionId(id);
+  }, []);
+  useEffect(() => {
+    if (submitted || role === "teacher") return;
 
-  socket.on("question:active", (data) => {
-    console.log("📨 Received question:active", data);
-    setQuestionData(data);
-    setSelected(null);
-    setSubmitted(false);
-    setResults([]);
-    setTimeLeft(data.duration || 60);
-  });
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
 
-  socket.on("question:results", (data) => {
-    setResults(data);
-  });
+          if (!submitted) {
+            // Auto-submit with no answer
+            socket.emit("question:submit_answer", {
+              questionId: questionData._id,
+              user: currentUser,
+              answerId: null, // Or "" if backend expects a string
+            });
+            setSubmitted(true);
+          }
 
-  return () => {
-    socket.off("question:active");
-    socket.off("question:results");
-  };
-}, []);
+          return 0;
+        }
 
+        return prev - 1;
+      });
+    }, 1000);
 
-  // Timer
+    return () => clearInterval(timer);
+  }, [submitted, role, questionData, currentUser]);
+
+  // Emit join event and listen for updates/kicks
+  useEffect(() => {
+    let name = sessionStorage.getItem("studentName");
+    let id = sessionStorage.getItem("userId");
+    const role = sessionStorage.getItem("role") || "student";
+
+    if (!name) {
+      name = "User-" + Math.floor(Math.random() * 10000);
+      sessionStorage.setItem("studentName", name);
+    }
+
+    if (!id) {
+      id = `${name}-${Math.random().toString(36).substr(2, 5)}`;
+      sessionStorage.setItem("userId", id);
+    }
+
+    setCurrentUser(name);
+
+    socket.emit("participant:join", { id, name, role });
+
+    socket.on("users:update", (users) => {
+      setParticipants(users);
+    });
+
+    socket.on("user:kicked", ({ id: kickedId }) => {
+      if (kickedId === id) {
+        alert("You have been kicked out.");
+        sessionStorage.clear();
+        navigate("/kicked");
+      }
+    });
+
+    return () => {
+      socket.emit("participant:leave", { id });
+      socket.off("users:update");
+      socket.off("user:kicked");
+    };
+  }, [navigate]);
+
+  // Fetch latest question and listen to socket
+  useEffect(() => {
+    const fetchLatestQuestion = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/questions/latest");
+        const data = await res.json();
+        console.log("📦 Fetched from /latest:", data);
+
+        if (data) {
+          const createdAt = new Date(Date.parse(data.createdAt));
+          // console.log("This is time",Date.parse(data.createdAt))
+          const now = new Date();
+          // console.log("This is new time",now.getTime())
+          const secondsAgo = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+          const remainingTime = Math.max(data.duration - secondsAgo, 0);
+          console.log("⏱️ Now:", now.getTime());
+console.log("📦 Created At:", Date.parse(data.createdAt));
+console.log("⏳ Seconds Ago:", secondsAgo);
+          if (role === "student") {
+            if (remainingTime <= 0) {
+              console.log("⏳ Question expired on join.");
+              return;
+            }
+            setTimeLeft(remainingTime);
+          } else {
+            // Teacher gets full duration
+            setTimeLeft(data.duration || 60);
+          }
+
+          setQuestionData(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch latest question", err);
+      }
+    };
+
+    fetchLatestQuestion();
+
+    socket.on("question:active", (data) => {
+      const createdAt = new Date(Date.parse(data.createdAt));
+      const now = new Date();
+
+      const secondsAgo = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+      const remainingTime = Math.max(data.duration - secondsAgo, 0);
+
+      if (role === "student" && remainingTime <= 0) {
+        console.log("⚠️ Received outdated question for student. Skipping.");
+        return;
+      }
+
+      setQuestionData(data);
+      setSelected(null);
+      setSubmitted(false);
+      setResults([]);
+      setTimeLeft(remainingTime);
+    });
+
+    socket.on("question:results", (data) => {
+      setResults(data);
+    });
+
+    return () => {
+      socket.off("question:active");
+      socket.off("question:results");
+    };
+  }, [role]);
+
+  // Timer countdown
   useEffect(() => {
     if (submitted || role === "teacher") return;
 
@@ -78,24 +191,30 @@ const QuestionCard = () => {
     return () => clearInterval(timer);
   }, [submitted, role]);
 
+  // Submit selected answer
   const handleSubmit = () => {
     if (!selected || submitted) return;
+
     socket.emit("question:submit_answer", {
       questionId: questionData._id,
       user: currentUser,
       answerId: selected,
     });
+
     setSubmitted(true);
+  };
+  const handleClick = () => {
+    navigate("/question-data");
   };
 
   const calculatePercentage = (optionId) => {
-  const total = results.reduce((sum, r) => sum + Number(r.count), 0);
-  const option = results.find((r) => r.optionId === optionId || r.option_id === optionId);
-  const count = Number(option?.count || 0);
-  return total === 0 ? 0 : Math.round((count / total) * 100);
-};
-
-
+    const total = results.reduce((sum, r) => sum + Number(r.count), 0);
+    const option = results.find(
+      (r) => r.optionId === optionId || r.option_id === optionId
+    );
+    const count = Number(option?.count || 0);
+    return total === 0 ? 0 : Math.round((count / total) * 100);
+  };
 
   if (!questionData && role === "student") {
     return (
@@ -127,9 +246,7 @@ const QuestionCard = () => {
       </div>
     );
   }
-  if (!questionData) return null; // Or your loader/wait screen
-
-
+  if (!questionData) return null;
 
   return (
     <div className="relative font-sora flex flex-col items-start justify-center mx-auto mt-40 w-[727px]">
@@ -188,17 +305,26 @@ const QuestionCard = () => {
 
       {role === "student" && (
         <div className="w-full flex justify-end mt-6">
-          <button
-            disabled={!selected || submitted}
-            onClick={handleSubmit}
-            className={`px-8 py-2 w-[233px] h-[57px] rounded-full text-white text-xl font-medium transition bg-gradient-to-r from-[#8F64E1] to-[#1D68BD] ${
-              selected && !submitted ? "hover:opacity-90" : "cursor-not-allowed"
-            }`}
-          >
-            Submit
-          </button>
+          {!submitted && timeLeft > 0 ? (
+            <button
+              disabled={!selected}
+              onClick={handleSubmit}
+              className={`px-8 py-2 w-[233px] h-[57px] rounded-full text-white text-xl font-medium transition bg-gradient-to-r from-[#8F64E1] to-[#1D68BD] ${
+                selected ? "hover:opacity-90" : "cursor-not-allowed"
+              }`}
+            >
+              Submit
+            </button>
+          ) : (
+            <h1 className="text-2xl text-center text-gray-600">
+              <strong className="font-semibold">
+                Wait for the teacher to ask a new question..
+              </strong>
+            </h1>
+          )}
         </div>
       )}
+
       {role === "teacher" && (
         <div className="w-full flex justify-end mt-6">
           <button
@@ -225,6 +351,11 @@ const QuestionCard = () => {
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         currentUser={currentUser}
+        role={role}
+        participants={participants}
+        onKick={(name) => {
+          socket.emit("user:kick", { name });
+        }}
       />
     </div>
   );

@@ -8,6 +8,8 @@ dotenv.config();
 import chatRoutes from "./routes/chatRoutes.js";
 import chatSocketHandler from "./sockets/chatSocket.js";
 import { socketHandler } from "./sockets/questionSocket.js";
+import { registerParticipantHandlers } from "./sockets/participants.js";
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -21,6 +23,10 @@ app.use(express.json());
 app.use("/api", chatRoutes);
 app.use("/api", questionRoutes);
 
+
+io.on("connection", (socket) => {
+  registerParticipantHandlers(io, socket);
+});
 chatSocketHandler(io);
 socketHandler(io);
 const PORT = process.env.PORT || 4000;
