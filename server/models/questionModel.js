@@ -12,7 +12,6 @@ export const createQuestion = async (question, duration, options) => {
 
     const questionId = questionResult.rows[0].id;
 
-    // Insert options
     for (let opt of options) {
       await client.query(
         "INSERT INTO options (question_id, text, is_correct) VALUES ($1, $2, $3)",
@@ -20,7 +19,6 @@ export const createQuestion = async (question, duration, options) => {
       );
     }
 
-    // Fetch all options after insert
     const optionsResult = await client.query(
       "SELECT id, text FROM options WHERE question_id = $1",
       [questionId]
@@ -28,13 +26,12 @@ export const createQuestion = async (question, duration, options) => {
 
     await client.query("COMMIT");
 
-    // Return full question object
     return {
-      _id: questionId, // for frontend compatibility
+      _id: questionId,
       question: questionResult.rows[0].question,
       duration: questionResult.rows[0].duration,
       options: optionsResult.rows.map((o) => ({
-        _id: o.id, // mimic MongoDB's _id for frontend
+        _id: o.id,
         text: o.text,
       })),
     };
@@ -42,19 +39,42 @@ export const createQuestion = async (question, duration, options) => {
     await client.query("ROLLBACK");
     throw error;
   } finally {
-    client.release();
+    client.release(); // ✅ correct way
   }
 };
 
-
 export const getLatestQuestion = async () => {
-  const result = await pool.query(
-    `SELECT q.id, q.question, q.duration, json_agg(json_build_object('id', o.id, 'text', o.text, 'correct', o.is_correct)) as options
-     FROM questions q
-     JOIN options o ON q.id = o.question_id
-     GROUP BY q.id
-     ORDER BY q.id DESC
-     LIMIT 1`
-  );
-  return result.rows[0];
+  // const pool = await pool.connect();
+  try {
+    const questionResult = await pool.query(
+      `SELECT id, question, duration 
+       FROM questions 
+       ORDER BY created_at DESC 
+       LIMIT 1`
+    );
+
+    if (questionResult.rows.length === 0) return null;
+
+    const question = questionResult.rows[0];
+
+    const optionsResult = await pool.query(
+      `SELECT id, text 
+       FROM options 
+       WHERE question_id = $1`,
+      [question.id]
+    );
+
+    return {
+      _id: question.id,
+      question: question.question,
+      duration: question.duration,
+      options: optionsResult.rows.map((opt) => ({
+        _id: opt.id,
+        text: opt.text,
+      })),
+    };
+  } catch (error) {
+    console.error("Error in getLatestQuestion:", error);
+    throw error;
+  }
 };

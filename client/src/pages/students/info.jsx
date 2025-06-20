@@ -5,18 +5,17 @@ function Info() {
   const [name, setName] = useState("");
   const navigate = useNavigate();
 
-  // Check sessionStorage on mount
   useEffect(() => {
     const storedName = sessionStorage.getItem("studentName");
     if (storedName) {
-      navigate("/question"); // or whatever your main student path is
+      navigate("/question"); 
     }
   }, [navigate]);
 
   const handleContinue = () => {
     if (!name.trim()) return;
     sessionStorage.setItem("studentName", name.trim());
-    navigate("/wait"); // or whatever the route is after login
+    navigate("/wait"); 
   };
 
   return (

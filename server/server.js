@@ -7,13 +7,12 @@ import dotenv from "dotenv";
 dotenv.config();
 import chatRoutes from "./routes/chatRoutes.js";
 import chatSocketHandler from "./sockets/chatSocket.js";
-
+import { socketHandler } from "./sockets/questionSocket.js";
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: "*"
   },
 });
 app.set("io", io);
@@ -23,6 +22,6 @@ app.use("/api", chatRoutes);
 app.use("/api", questionRoutes);
 
 chatSocketHandler(io);
-
+socketHandler(io);
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,8 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
 import io from "socket.io-client";
+import { useNavigate } from "react-router-dom";
+
 const socket = io("http://localhost:4000");
 function QuestionList() {
+  const navigate = useNavigate();
   const [question, setQuestion] = useState("");
   const [duration, setDuration] = useState(60);
   const [options, setOptions] = useState([
@@ -42,21 +45,18 @@ const handleSubmit = async () => {
       duration,
       options,
     });
-
-    // Emit question live after storing
     socket.emit("question:active", res.data);
 
-    alert("Question submitted successfully!");
-    setQuestion("");
-    setOptions([
-      { text: "", correct: null },
-      { text: "", correct: null },
-    ]);
+    // setQuestion("");
+    // setOptions([
+    //   { text: "", correct: null },
+    //   { text: "", correct: null },
+    // ]);
+    navigate("/question")
   } catch (error) {
     alert("Failed to submit question.");
   }
 };
-
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-white px-4 py-8 font-sora">
