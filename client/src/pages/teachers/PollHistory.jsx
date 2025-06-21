@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import ChatPopup from "../common/ChatPopup";
 const PollHistory = () => {
   const [history, setHistory] = useState([]);
 
@@ -30,9 +30,9 @@ const PollHistory = () => {
     return total === 0 ? 0 : Math.round((count / total) * 100);
   };
   return (
-    <div className="p-8 font-sora bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-semibold mb-8">
-        View <span className="text-purple-600">Poll History</span>
+    <div className="p-8 font-sora text-left min-h-screen">
+      <h1 className="text-3xl text-left ml-[55px]  mb-8">
+        View <strong >Poll History</strong>
       </h1>
 
       {history.map((item, index) => (
@@ -44,28 +44,58 @@ const PollHistory = () => {
           </div>
 
           <div className="border border-purple-500 rounded-b-lg py-2 px-4 bg-white">
-            {item.options.map((option) => {
-              const percentage = calculatePercentage(option._id, item.results);
+            {item.options.map((option, optIdx) => {
+  const percentage = calculatePercentage(option._id, item.results);
+  const onBar = percentage > 0;
+  const optionLabel = optIdx + 1;
 
-              return (
-                <div
-                  key={option._id}
-                  className="relative mt-4 px-4 py-3 m-2 rounded-lg bg-gray-100 border border-transparent"
-                >
-                  <div className="flex justify-between items-center z-10 relative">
-                    <span className="font-medium text-sm">{option.text}</span>
-                    <span className="text-xs font-semibold text-gray-600">
-                      {percentage}%
-                    </span>
-                  </div>
+  return (
+    <div
+      key={option._id}
+      className="relative mt-4 px-4 py-3 rounded-lg border overflow-hidden transition-all"
+    >
+      {/* Purple Result Bar */}
+      <div
+        className="absolute top-0 left-0 h-full bg-[#6766D5] z-0 transition-all"
+        style={{ width: `${percentage}%`, opacity: 0.9 }}
+      ></div>
 
-                  <div
-                    className="absolute left-0 top-0 h-full bg-[#8F64E1] rounded-lg z-0 transition-all"
-                    style={{ width: `${percentage}%`, opacity: 0.3 }}
-                  ></div>
-                </div>
-              );
-            })}
+      {/* Foreground content */}
+      <div className="flex justify-between items-center z-10 relative">
+        <div className="flex items-center gap-3">
+          {/* Numbered Circle */}
+          <div
+              className={`w-6 h-6 flex items-center justify-center rounded-full text-sm font-semibold ${
+                onBar
+                  ? "bg-white text-[#6766D5] "
+                  : "bg-[#8D8D8D] text-white "
+              }`}
+            >
+              {optionLabel}
+            </div>
+          {/* Option Text */}
+          <span
+            className={`text-sm font-medium z-10 ${
+              onBar ? "text-white" : "text-gray-800"
+            }`}
+          >
+            {option.text}
+          </span>
+        </div>
+
+        {/* Percentage */}
+        <span
+          className={`text-sm font-semibold z-10 ${
+            onBar ? "text-white" : "text-gray-800"
+          }`}
+        >
+          {percentage}%
+        </span>
+      </div>
+    </div>
+  );
+})}
+
           </div>
         </div>
       ))}

@@ -9,11 +9,17 @@ export const createQuestion = async (question, duration, options, sessionId, cre
 
   const questionId = result.rows[0].id;
 
+  const insertedOptions = [];
+
   for (const opt of options) {
-    await pool.query(
-      `INSERT INTO options (text, question_id) VALUES ($1, $2)`,
+    const res = await pool.query(
+      `INSERT INTO options (text, question_id) VALUES ($1, $2) RETURNING id`,
       [opt.text, questionId]
     );
+    insertedOptions.push({
+      _id: res.rows[0].id, // real option ID
+      text: opt.text,
+    });
   }
 
   return {
@@ -21,10 +27,7 @@ export const createQuestion = async (question, duration, options, sessionId, cre
     question,
     duration,
     createdAt,
-    options: options.map((opt, idx) => ({
-      _id: `temp-${idx}`,
-      text: opt.text,
-    })),
+    options: insertedOptions,
   };
 };
 

@@ -10,14 +10,13 @@ const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
   const [participants, setParticipants] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Socket listeners
   useEffect(() => {
     socket.on("chat:receive_message", (data) => {
       setMessages((prev) => [...prev, data]);
     });
 
     socket.on("users:update", (list) => {
-      setParticipants(list); // list is [{ id, name }]
+      setParticipants(list);
     });
 
     socket.on("user:kicked", ({ name }) => {
@@ -35,7 +34,6 @@ const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
     };
   }, [currentUser]);
 
-  // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -48,17 +46,15 @@ const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
     setNewMsg("");
   };
 
-  // Kick participant
   const kickParticipant = (userId) => {
-  socket.emit("user:kick", { id: userId });
-};
-
+    socket.emit("user:kick", { id: userId });
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-28 right-14 w-[400px] h-[477px] bg-white shadow-lg z-50 border border-gray-300 flex flex-col">
-      {/* Tabs */}
+    <div className="fixed bottom-28 right-14 w-[400px] h-[477px] bg-white shadow-lg z-50 border border-gray-300 flex flex-col
+        animate-slide-in transition-all duration-300">
       <div className="flex border-b w-full">
         {["Chat", "Participants"].map((tab) => (
           <button
@@ -89,9 +85,12 @@ const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
                   {msg.sender}
                 </div>
                 <div
-                  className={`inline-block px-3 py-2 rounded-md text-white ${
-                    msg.sender === currentUser ? "bg-[#8F64E1]" : "bg-[#3A3A3B]"
-                  }`}
+                  className={`inline-block px-3 py-2 text-white max-w-[75%] break-words
+    ${
+      msg.sender === currentUser
+        ? "bg-[#3A3A3B] rounded-tl-lg rounded-bl-lg rounded-br-lg ml-auto"
+        : "bg-[#8F64E1] rounded-tr-lg rounded-br-lg rounded-bl-lg"
+    }`}
                 >
                   {msg.message}
                 </div>
@@ -118,9 +117,7 @@ const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
                       Kick out
                     </button>
                   ) : (
-                    <span className="text-xs text-gray-400">
-                      {/* Empty cell */}
-                    </span>
+                    <span className="text-xs text-gray-400"></span>
                   )}
                 </li>
               ))}

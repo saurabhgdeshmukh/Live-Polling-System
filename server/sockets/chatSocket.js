@@ -1,4 +1,4 @@
-// sockets/chatSocket.js
+
 import  saveMessage  from "../models/chatModel.js";
 
 const chatSocketHandler = (io) => {

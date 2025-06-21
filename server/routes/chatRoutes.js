@@ -1,4 +1,4 @@
-// routes/chatRoutes.js
+
 import express from "express";
 const router = express.Router();
 import  getAllMessages from "../models/chatModel.js";

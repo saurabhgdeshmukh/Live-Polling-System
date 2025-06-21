@@ -1,9 +1,9 @@
-const participants = new Map(); // socket.id -> { id, name, role }
+const participants = new Map(); 
 
 export const registerParticipantHandlers = (io, socket) => {
-  // Join event
+
   socket.on("participant:join", ({ id, name, role }) => {
-    // Prevent duplicates by removing existing socket for the same id
+  
     for (const [sockId, p] of participants.entries()) {
       if (p.id === id) {
         participants.delete(sockId);
@@ -15,7 +15,6 @@ export const registerParticipantHandlers = (io, socket) => {
     emitParticipants(io);
   });
 
-  // Leave event
   socket.on("participant:leave", ({ id }) => {
     for (const [sockId, p] of participants.entries()) {
       if (p.id === id) {
@@ -26,13 +25,11 @@ export const registerParticipantHandlers = (io, socket) => {
     emitParticipants(io);
   });
 
-  // Disconnect cleanup
   socket.on("disconnect", () => {
     participants.delete(socket.id);
     emitParticipants(io);
   });
 
-  // Kick user by ID
   socket.on("user:kick", ({ id }) => {
     for (const [sockId, p] of participants.entries()) {
       if (p.id === id) {

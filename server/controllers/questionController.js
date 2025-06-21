@@ -2,8 +2,8 @@ import { createQuestion, getLatestQuestion,getQuestionHistoryWithResults } from 
 
 
 export const postQuestion = async (req, res) => {
-  const { question, duration, options,sessionId} = req.body;
-  
+  const { question, duration, options,sessionId,created_at} = req.body;
+
   if (
     !question ||
     !options ||
@@ -20,7 +20,7 @@ export const postQuestion = async (req, res) => {
     const io = req.app.get("io");
     if (!io) throw new Error("Socket.IO instance not set on app");
 
-    const savedQuestion = await createQuestion(question, duration || 60, options, sessionId);
+    const savedQuestion = await createQuestion(question, duration || 60, options, sessionId,created_at);
 
     io.emit("question:active", savedQuestion); // broadcast to all clients
     console.log("✅ Emitted question:active", savedQuestion);
