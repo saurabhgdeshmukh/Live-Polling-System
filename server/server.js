@@ -14,20 +14,31 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: "https://live-polling-system-syn9.vercel.app",
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
+
 app.set("io", io);
-app.use(cors());
+
+app.use(
+  cors({
+    origin: "https://live-polling-system-syn9.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use("/api", chatRoutes);
 app.use("/api", questionRoutes);
 
-
 io.on("connection", (socket) => {
   registerParticipantHandlers(io, socket);
 });
+
 chatSocketHandler(io);
 socketHandler(io);
+
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
