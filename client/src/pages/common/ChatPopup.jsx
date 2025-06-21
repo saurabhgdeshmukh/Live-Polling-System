@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 
-const socket = io("https://live-polling-system-1-zunt.onrender.com");
+const socket = io("https://live-polling-system-1-zunt.onrender.com/");
 
 const ChatPopup = ({ isOpen, onClose, currentUser, role }) => {
   const [activeTab, setActiveTab] = useState("chat");
