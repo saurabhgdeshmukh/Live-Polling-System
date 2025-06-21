@@ -3,7 +3,7 @@ import axios from "axios";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 
-const socket = io("https://live-polling-system-1-zunt.onrender.com");
+const socket = io("https://live-polling-system-1-zunt.onrender.com/");
 function QuestionList() {
   const navigate = useNavigate();
   const [question, setQuestion] = useState("");
