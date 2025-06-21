@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ChatPopup from "./ChatPopup";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-const socket = io("https://live-polling-system-1-zunt.onrender.com");
+const socket = io("https://live-polling-system-1-zunt.onrender.com/");
 
 const QuestionCard = () => {
   const navigate = useNavigate();
