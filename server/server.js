@@ -1,10 +1,11 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import questionRoutes from "./routes/questionRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
+
+import questionRoutes from "./routes/questionRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import chatSocketHandler from "./sockets/chatSocket.js";
 import { socketHandler } from "./sockets/questionSocket.js";
@@ -12,9 +13,23 @@ import { registerParticipantHandlers } from "./sockets/participants.js";
 
 const app = express();
 const server = http.createServer(app);
+
+const allowedOrigins = ["https://live-polling-system-syn9.vercel.app"];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+app.use(express.json());
+
+app.use("/api", chatRoutes);
+app.use("/api", questionRoutes);
 const io = new Server(server, {
   cors: {
-    origin: "https://live-polling-system-syn9.vercel.app",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -22,21 +37,9 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-app.use(
-  cors({
-    origin: "https://live-polling-system-syn9.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
-app.use(express.json());
-app.use("/api", chatRoutes);
-app.use("/api", questionRoutes);
-
 io.on("connection", (socket) => {
   registerParticipantHandlers(io, socket);
 });
-
 chatSocketHandler(io);
 socketHandler(io);
 
