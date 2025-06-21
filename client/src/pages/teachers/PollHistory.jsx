@@ -8,7 +8,7 @@ const PollHistory = () => {
       try {
         const sessionId = sessionStorage.getItem("teacherSessionId");
         const res = await fetch(
-          `http://localhost:4000/api/history?sessionId=${sessionId}`
+          `https://live-polling-system-1-zunt.onrender.com/api/history?sessionId=${sessionId}`
         );
         const data = await res.json();
         console.log("what is happenng",data)
