@@ -14,24 +14,21 @@ import { registerParticipantHandlers } from "./sockets/participants.js";
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = ["https://live-polling-system-syn9.vercel.app"];
-
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
   })
 );
 app.use(express.json());
 
 app.use("/api", chatRoutes);
 app.use("/api", questionRoutes);
+
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "*",
     methods: ["GET", "POST"],
-    credentials: true,
   },
 });
 
